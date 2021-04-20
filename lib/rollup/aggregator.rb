@@ -4,8 +4,8 @@ class Rollup
       @klass = klass # or relation
     end
 
-    def rollup(name, column: nil, interval: "day", dimension_names: nil, time_zone: nil, current: true, last: nil, clear: false, &block)
-      raise "Name can't be blank" if name.blank?
+    def rollup(name, column: nil, interval: "day", dimension_names: nil, time_zone: nil, current: true, last: nil, clear: false, remove_empties: false, &block)
+      raise "Name can't be Blank" if name.blank?
 
       column ||= @klass.rollup_column || :created_at
       validate_column(column)
@@ -14,6 +14,15 @@ class Rollup
       result = perform_calculation(relation, &block)
 
       dimension_names = set_dimension_names(dimension_names, relation)
+
+      if remove_empties
+        non_empty_result = {}
+        result.map do |key, value|
+          result.delete(key) if value == 0
+        end
+        result
+      end
+
       records = prepare_result(result, name, dimension_names, interval)
 
       maybe_clear(clear, name, interval) do
